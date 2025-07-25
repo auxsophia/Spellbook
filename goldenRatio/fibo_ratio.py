@@ -1,72 +1,97 @@
 import math
+import shutil
+
+def visualize_ratio_plot(ratio, width=50):
+    """
+    Creates an ASCII plot to visualize the current ratio in relation to
+    the golden ratio (φ) on a number line from 1.0 to 2.0.
+    """
+    phi = (1 + math.sqrt(5)) / 2
+    plot_min, plot_max = 1.0, 2.0
+    
+    if not (plot_min <= ratio <= plot_max):
+        return
+
+    ratio_pos = int((ratio - plot_min) / (plot_max - plot_min) * width)
+    ratio_pos = max(0, min(width, ratio_pos))
+    phi_pos = int((phi - plot_min) / (plot_max - plot_min) * width)
+
+    plot = ['-'] * (width + 1)
+    plot[phi_pos] = '|'
+    plot[ratio_pos] = '*'
+    if ratio_pos == phi_pos:
+        plot[ratio_pos] = 'X'
+
+    print(f"  -> Plot:  [1.0 {''.join(plot)}] 2.0   (* = Current Ratio, | = φ)")
+
 
 def fibonacci_recursive(n, a=0, b=1, count=3, prev_ratio=0.0, precision=3):
     """
-    Recursively calculates the Fibonacci sequence and demonstrates its
-    relationship with the golden ratio.
-
-    Args:
-        n (int): The total number of Fibonacci numbers to generate.
-        a (int): The first of the two previous numbers in the sequence.
-        b (int): The second of the two previous numbers in the sequence.
-        count (int): The current step in the sequence generation.
-        prev_ratio (float): The ratio from the previous step.
-        precision (int): The decimal precision for printing the ratio.
+    Recursively calculates the Fibonacci sequence and its relationship to the
+    golden ratio with text-based visualizations and dynamic precision.
     """
-    # Base case: Stop when we have generated n numbers.
     if count > n:
-        print("\nCalculation complete.")
+        print("\nConsole visualization complete.")
         return
 
-    # Calculate the next number in the sequence.
+    # Define the Golden Ratio
+    phi = (1 + math.sqrt(5)) / 2
+
     next_fib = a + b
     print(f"Step {count}: {next_fib}")
+    
+    try:
+        terminal_width = shutil.get_terminal_size((80, 20)).columns
+    except OSError:
+        terminal_width = 80
+        
+    current_precision = precision
 
-    # Calculate the ratio, handle division by zero for the early terms.
-    if a != 0:
+    if a > 0:
         current_ratio = b / a
         
-        # Format strings for comparison and printing
-        format_str = f"{{:.{precision}f}}"
+        # Format string for comparison based on the precision from the last step
+        comparison_format_str = f"{{:.{current_precision}f}}"
         
-        # Compare the truncated versions of the current and previous ratios
-        if format_str.format(current_ratio) == format_str.format(prev_ratio):
-             # If they are the same, increase precision for the next step
-            precision += 1
-            format_str = f"{{:.{precision}f}}"
+        # Check if the ratio has stabilized at this precision
+        if comparison_format_str.format(current_ratio) == comparison_format_str.format(prev_ratio):
+            # If so, increase precision for the CURRENT step's display
+            current_precision += 1
 
-        print(f"  -> Ratio (n-1/n-2): {b}/{a} ≈ {format_str.format(current_ratio)}")
+        # Format string for the CURRENT step's display, using the potentially updated precision
+        display_format_str = f"{{:.{current_precision}f}}"
         
-        # Set the new previous ratio for the next recursive call
+        # Print the ratio and phi to the current level of precision
+        print(f"  -> Ratio: {b}/{a} ≈ {display_format_str.format(current_ratio)} (φ ≈ {display_format_str.format(phi)})")
+
+        visualize_ratio_plot(current_ratio)
         prev_ratio = current_ratio
-
-    # The recursive call
-    # The new 'a' is the old 'b', and the new 'b' is 'next_fib'.
-    fibonacci_recursive(n, b, next_fib, count + 1, prev_ratio, precision)
+    
+    print("-" * (terminal_width - 2))
+    # Make the recursive call with the potentially increased precision
+    fibonacci_recursive(n, b, next_fib, count + 1, prev_ratio, current_precision)
 
 
 def main():
     """
     Main function to drive the script. Explains the concept and gets user input.
     """
-    print("=" * 60)
-    print("   Welcome to the Fibonacci Sequence & Golden Ratio Explorer!")
-    print("=" * 60)
-    print("\nThe Fibonacci sequence is a series of numbers where each number")
-    print("is the sum of the two preceding ones, usually starting with 0 and 1.")
-    print("\nAn amazing property of this sequence is the ratio between consecutive")
-    print("numbers. As the sequence progresses, this ratio gets closer and closer")
-    print("to the Golden Ratio (φ), an irrational number approximately equal")
-    print("to 1.61803398875...")
-    print("\nThis script will generate the Fibonacci sequence and show this")
-    print("convergence in action. As the ratio stabilizes at a certain")
-    print("decimal precision, we will add another digit to show how")
-    print("the approximation continues to improve.")
-    print("-" * 60)
+    try:
+        terminal_width = shutil.get_terminal_size((80, 20)).columns
+    except OSError:
+        terminal_width = 80
+    
+    print("=" * terminal_width)
+    print("   Welcome to the Fibonacci Sequence & Golden Ratio Explorer!".center(terminal_width))
+    print("=" * terminal_width)
+    print("\nThis script visualizes the Fibonacci sequence and its amazing".center(terminal_width))
+    print("relationship to the Golden Ratio (φ ≈ 1.618).".center(terminal_width))
+    print("\nAt each step, you'll see the ratio of consecutive numbers converge on φ.")
+    print("-" * terminal_width)
 
     while True:
         try:
-            num_terms = int(input("\nEnter the number of Fibonacci terms to generate (must be > 2): "))
+            num_terms = int(input("\nEnter the number of Fibonacci terms to generate (e.g., 15): "))
             if num_terms > 2:
                 break
             else:
@@ -74,16 +99,11 @@ def main():
         except ValueError:
             print("Invalid input. Please enter a whole number.")
 
-    print("\n--- Generating Fibonacci Sequence ---")
+    print("\n--- Generating Console Visualization ---\n")
+    print("Step 1: 0\n" + "-" * (terminal_width-2))
+    print("Step 2: 1\n  -> Ratio: 1/0 ≈ Not a number\n" + "-" * (terminal_width-2))
     
-    # Handle the first two terms manually before starting recursion
-    print("Step 1: 0")
-    print("Step 2: 1")
-    print("  -> Ratio (n-1/n-2): 1/0 ≈ Not a number")
-
-    # Start the recursion from the 3rd term
-    # Initial 'a' is 1, 'b' is 1, to calculate the third term (which is 2)
-    # The first ratio to calculate will be 1/1 = 1
+    # Start the recursion
     fibonacci_recursive(num_terms, a=1, b=1, count=3, prev_ratio=1.0)
 
 
